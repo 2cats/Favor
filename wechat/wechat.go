@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"staticserver/model"
+	"favor/model"
 
 	"github.com/chanxuehong/wechat/corp"
 	"github.com/chanxuehong/wechat/corp/menu"

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"staticserver/model"
-	"staticserver/wechat"
+	"favor/model"
+	"favor/wechat"
 	"strconv"
 
 	"github.com/kataras/iris"

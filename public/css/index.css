@@ -1,0 +1,138 @@
+body {
+	padding-top: 70px;
+}
+
+.hiddenItem {
+	width: 0px;
+	height: 0px;
+	overflow: hidden;
+}
+
+#progress {
+	margin-top: -18px;
+}
+
+#outersummer {
+	margin-top: 20px;
+}
+
+.badge {
+	position: relative;
+}
+
+.badge[data-badge]:after {
+	content: attr(data-badge);
+	position: absolute;
+	top: -10px;
+	left: -10px;
+	font-size: .7em;
+	background: green;
+	color: white;
+	width: 18px;
+	height: 18px;
+	text-align: center;
+	line-height: 18px;
+	border-radius: 50%;
+	box-shadow: 0 0 1px #333;
+}
+
+.msgitem {
+	background-color: #f7f7f7;
+	margin-top: 15px;
+	padding: 15px;
+	position: relative;
+}
+
+.note-editor {
+	margin-top: 13px;
+}
+
+.btngroup {
+	margin: 3px;
+	position: absolute;
+	top: 0px;
+	right: 0px;
+}
+
+.idlabel {
+	margin-top: 6px;
+	margin-right: 5px;
+	color: green;
+}
+
+
+
+.load {
+	display: inline-flex;
+	-webkit-flex-direction: row;
+	width: 30%;
+	height: 200px;
+	/*border: 1px solid dimgray;*/
+	/*background-color: #c4c8ce;*/
+	margin-top: 20px;
+	margin-left: 35%;
+	margin-right: 35%;
+	align-items: center;
+	justify-content: center;
+}
+
+.loading-2 span {
+	display: inline-block;
+	height: 35px;
+	width: 4px;
+	border-radius: 2px;
+	margin: 0 2px;
+	background-color: #000066;
+}
+
+.loading-2 span:nth-child(1) {
+	-webkit-animation: loading-2 1s ease-in 0.1s infinite;
+}
+
+.loading-2 span:nth-child(2) {
+	-webkit-animation: loading-2 1s ease-in 0.2s infinite;
+}
+
+.loading-2 span:nth-child(3) {
+	-webkit-animation: loading-2 1s ease-in 0.3s infinite;
+}
+
+.loading-2 span:nth-child(4) {
+	-webkit-animation: loading-2 1s ease-in 0.4s infinite;
+}
+
+.loading-2 span:nth-child(5) {
+	-webkit-animation: loading-2 1s ease-in 0.5s infinite;
+}
+
+@keyframes loading-2 {
+	0% {
+		-webkit-transform: scaleY(1);
+	}
+	50% {
+		-webkit-transform: scaleY(0.4);
+	}
+	100% {
+		-webkit-transform: scaleY(1);
+	}
+}
+
+.textarea {
+	transition: all 0.30s ease-in-out;
+	-webkit-transition: all 0.30s ease-in-out;
+	-moz-transition: all 0.30s ease-in-out;
+	/*border:#6565e5 1px solid;*/
+	border-radius: 3px;
+	outline: none;
+	display: inline-block;
+	width: 100%;
+	height: 100%;
+	margin-top: 15px;
+	/*margin-bottom: 1%;*/
+}
+
+.textarea:hover {
+	box-shadow: 0 0 5px rgba(70, 200, 238, 1);
+	-webkit-box-shadow: 0 0 5px rgba(70, 190, 238, 1);
+	-moz-box-shadow: 0 0 5px rgba(70, 190, 238, 1);
+}

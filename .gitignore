@@ -2,3 +2,4 @@ favor
 public/upload
 .vscode
 
+*.db

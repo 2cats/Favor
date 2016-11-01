@@ -3,14 +3,12 @@ package models
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
-	"github.com/mgutz/dat/v1"
-	"github.com/mgutz/dat/v1/sqlx-runner"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-var Conn *runner.Connection
+var db *sql.DB
 
 type Msg struct {
 	Id         int64  `db:"id"`
@@ -21,59 +19,78 @@ type Msg struct {
 }
 
 func UpdateMsg(id int64, content string) error {
-	var msg = Msg{}
-	msg.Content = content
-	msg.UpdateTime = time.Now().Unix()
-	_, err := Conn.Update("msg").SetWhitelist(msg, "content", "update_time").Where("id = $1", id).Exec()
+	_, err := db.Exec(`UPDATE msg SET content=? ,update_time=? WHERE id=?`, content, time.Now().Unix(), id)
 	return err
 }
 func DeleteMsg(id int64) error {
-	_, err := Conn.DeleteFrom("msg").Where("id = $1", id).Exec()
+	_, err := db.Exec(`DELETE FROM msg WHERE id=?`, id)
 	return err
 }
 
 func InsertMsg(content string, user string) error {
-	var msg = Msg{
-		Content:    content,
-		CreateUser: user,
-	}
-	msg.CreateTime = time.Now().Unix()
-	msg.UpdateTime = msg.CreateTime
-	_, err := Conn.InsertInto("msg").Record(msg).Blacklist("id").Exec()
+	now := time.Now().Unix()
+	_, err := db.Exec(`INSERT INTO msg(content,create_user,create_time,update_time) VALUES(?,?,?,?)`,
+		content, user, now, now,
+	)
 	return err
 }
 func SelectAllMsg() (msgs []Msg, err error) {
-	err = Conn.SQL(`SELECT * FROM msg ORDER BY update_time DESC`).QueryStructs(&msgs)
+	records, err := db.Query(`SELECT * FROM msg ORDER BY update_time DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer records.Close()
+	for records.Next() {
+		var msg Msg
+		records.Scan(&msg)
+		msgs = append(msgs, msg)
+	}
+	err = records.Err()
 	return
 }
 func SelectIdMsg(id int) (msg Msg, err error) {
-	err = Conn.SQL(`SELECT * FROM msg WHERE id = $1`, id).QueryStruct(&msg)
+	record := db.QueryRow(`SELECT id,content,create_user,create_time,update_time FROM msg ORDER BY update_time DESC LIMIT 1`)
+	err = record.Scan(&msg.Id, &msg.Content, &msg.CreateUser, &msg.CreateTime, &msg.UpdateTime)
 	return
 }
 func SelectNewestMsg() (msg Msg, err error) {
-	err = Conn.SQL(`SELECT * FROM msg ORDER BY update_time DESC LIMIT 1`).QueryStruct(&msg)
+	record := db.QueryRow(`SELECT id,content,create_user,create_time,update_time FROM msg ORDER BY update_time DESC LIMIT 1`)
+	if record == nil {
+		err = errors.New("Nil Record")
+		return
+	}
+	err = record.Scan(&msg.Id, &msg.Content, &msg.CreateUser, &msg.CreateTime, &msg.UpdateTime)
 	return
 }
 func SelectPageMsg(filter string, pageSize int, nth int) (msgs []Msg, err error) {
 	if nth <= 0 || pageSize <= 0 {
 		err = errors.New("pageSize or nth error")
 	}
-
-	err = Conn.SQL(`
-		SELECT * FROM msg where content  like $1  ORDER BY update_time DESC LIMIT $2 OFFSET $3;
-		`, "%%"+filter+"%%", pageSize, pageSize*(nth-1)).QueryStructs(&msgs)
+	records, err := db.Query(`
+		SELECT id,content,create_user,create_time,update_time FROM msg where content  like $1  ORDER BY update_time DESC LIMIT $2 OFFSET $3;
+		`, "%%"+filter+"%%", pageSize, pageSize*(nth-1))
+	if err != nil {
+		return nil, err
+	}
+	defer records.Close()
+	for records.Next() {
+		var msg Msg
+		records.Scan(&msg.Id, &msg.Content, &msg.CreateUser, &msg.CreateTime, &msg.UpdateTime)
+		msgs = append(msgs, msg)
+	}
+	err = records.Err()
 	return
+
 }
 func GetMsgCount(filter string) (count int, err error) {
-	err = Conn.SQL(`
-		SELECT COUNT(*) FROM msg where content  like $1;
-		`, "%%"+filter+"%%").QueryStruct(&count)
+	record := db.QueryRow(`SELECT COUNT(*) FROM msg where content  like ?;`, "%%"+filter+"%%")
+	err = record.Scan(&count)
 	return
 }
 func createSchema() error {
 	queries := []string{
-		`CREATE TABLE IF NOT EXISTS public.msg(
-            Id SERIAL PRIMARY KEY,
+		`CREATE TABLE IF NOT EXISTS msg(
+            Id INTEGER PRIMARY KEY ,
             content character varying,
             create_user character varying,
             create_time bigint,
@@ -81,38 +98,14 @@ func createSchema() error {
         );`,
 	}
 	for _, q := range queries {
-		fmt.Println(q)
-		_, err := Conn.SQL(q).Exec()
-		if err != nil {
-			fmt.Println(err)
-		}
+		_, err := db.Exec(q)
+		panicWhenError(err)
 	}
 	return nil
 }
 func DBInit() {
-
-	constr := "dbname=msg user=postgres password=amber host=2cats.xyz sslmode=disable"
-	fmt.Println("DB CONF:", constr)
-	db, err := sql.Open("postgres", constr)
-
-	if err != nil {
-		panic(err)
-	}
-
-	// set to reasonable values for production
-	db.SetMaxIdleConns(4)
-	db.SetMaxOpenConns(16)
-
-	// set this to enable interpolation
-	dat.EnableInterpolation = true
-
-	// set to check things like sessions closing.
-	// Should be disabled in production/release builds.
-	dat.Strict = false
-
-	// Log any query over 10ms as warnings. (optional)
-	//runner.LogQueriesThreshold = 10 * time.Millisecond
-
-	Conn = runner.NewConnection(db, "postgres")
+	var err error
+	db, err = sql.Open("sqlite3", Config.DBFile)
+	panicWhenError(err)
 	createSchema()
 }

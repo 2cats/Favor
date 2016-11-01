@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"favor/model"
 	"favor/wechat"
 	"strconv"
@@ -20,17 +19,14 @@ var (
 )
 
 func main() {
+	models.ReadConfiguration()
 	models.DBInit()
-	iris.Config.MaxRequestBodySize = 1024 * 1024 * 1024 //1G
+	iris.Config.MaxRequestBodySize = models.Config.MaxUploadFileSize //1G
 	iris.Config.IsDevelopment = true
 	agentHandler := wechat.WechatInit()
 	iris.Handle("", "/agent", iris.ToHandler(agentHandler))
 	iris.Get("/", func(ctx *iris.Context) {
-		ctx.MustRender("index.html", struct {
-			Msgs []string
-		}{
-			Msgs: []string{"aaa", "bbb"},
-		})
+		ctx.MustRender("index.html", nil)
 	})
 	iris.Static("/public", "./public/", 1)
 	iris.Get("/msg", func(ctx *iris.Context) {
@@ -42,6 +38,7 @@ func main() {
 			resp := EmptySuccessResponse
 			count, err := models.GetMsgCount(filter)
 			if err != nil {
+				ctx.WriteString(err.Error())
 				return
 			}
 			resp.Data = count
@@ -50,16 +47,18 @@ func main() {
 		}
 		pagesize, err := strconv.Atoi(pgStr)
 		if err != nil {
-			fmt.Printf(err.Error())
+			ctx.WriteString(err.Error())
 			return
 		}
 		nth, err := strconv.Atoi(nthStr)
 		if err != nil {
+			ctx.WriteString(err.Error())
 			return
 		}
 
 		msg, err := models.SelectPageMsg(filter, pagesize, nth)
 		if err != nil {
+			ctx.WriteString(err.Error())
 			return
 		}
 		resp := EmptySuccessResponse
@@ -82,25 +81,27 @@ func main() {
 		}{}
 
 		if err := ctx.ReadJSON(&msg); err != nil {
+			ctx.WriteString(err.Error())
 			return
 		}
 
 		switch msg.Op {
 		case "INSERT":
 			if err := models.InsertMsg(msg.Data, models.AdminUser); err != nil {
+				ctx.WriteString(err.Error())
 				return
 			}
 			ctx.JSON(200, EmptySuccessResponse)
 		case "DELETE":
-
 			id, err := strconv.ParseInt(msg.Data, 10, 0)
 			if err != nil {
+				ctx.WriteString(err.Error())
 				return
 			}
 			if err := models.DeleteMsg(id); err != nil {
+				ctx.WriteString(err.Error())
 				return
 			}
-			fmt.Printf("\n %d DELETED \n", id)
 			ctx.JSON(200, EmptySuccessResponse)
 		}
 
@@ -124,6 +125,5 @@ func main() {
 			files[header.Filename] = path
 		}
 	})
-
-	iris.Listen(":8888")
+	iris.Listen(models.Config.Listen + ":" + models.Config.Port)
 }

@@ -1,6 +1,9 @@
 body {
 	padding-top: 70px;
 }
+p{
+	word-wrap: break-word;
+}
 
 .hiddenItem {
 	width: 0px;

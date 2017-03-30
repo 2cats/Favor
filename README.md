@@ -12,12 +12,14 @@ Tiny Web Server For File & Message Sharing
 
 # How to use
 
-### Download Released Binary
+### Download [Released Binary](https://github.com/2cats/Favor/releases) 
+
+> Default Config File : server.conf
+
 ```bash
 cd [FavorDir]
 ./Favor
 ```
-> Default Config File : server.conf
 
 
 ### Or Build From Source

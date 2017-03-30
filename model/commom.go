@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -14,10 +15,10 @@ func panicWhenError(err error) {
 	}
 }
 
+var ConfigFileName string
+
 const (
-	UPLOAD_DIR     = "public/upload/"
-	ConfigFileName = "server.conf"
-	AdminUser      = "admin"
+	DefaultConfFile = "server.conf"
 )
 
 func GetFilePrefix() string {
@@ -30,6 +31,7 @@ var _Config struct {
 		Listen            string
 		MaxUploadFileSize int
 		DBFile            string
+		UploadDir         string
 	}
 }
 var Config = &_Config.Common
@@ -37,5 +39,11 @@ var Config = &_Config.Common
 func ReadConfiguration() {
 	err := gcfg.ReadFileInto(&_Config, ConfigFileName)
 	panicWhenError(err)
+	if _, err := os.Stat(Config.UploadDir); os.IsNotExist(err) {
+		fmt.Printf("UploadDir Not Exist,Creating...")
+		err = os.Mkdir(Config.UploadDir, 0700)
+		panicWhenError(err)
+		fmt.Printf("%s Created", Config.UploadDir)
+	}
 	fmt.Printf("Config:%+v\n", *Config)
 }

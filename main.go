@@ -2,8 +2,10 @@ package main
 
 import (
 	"favor/model"
-	"favor/wechat"
+	"path/filepath"
 	"strconv"
+
+	"os"
 
 	"github.com/kataras/iris"
 	"github.com/valyala/fasthttp"
@@ -19,16 +21,20 @@ var (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		models.ConfigFileName = os.Args[1]
+	} else {
+		models.ConfigFileName = models.DefaultConfFile
+	}
 	models.ReadConfiguration()
 	models.DBInit()
 	iris.Config.MaxRequestBodySize = models.Config.MaxUploadFileSize //1G
 	iris.Config.IsDevelopment = true
-	agentHandler := wechat.WechatInit()
-	iris.Handle("", "/agent", iris.ToHandler(agentHandler))
 	iris.Get("/", func(ctx *iris.Context) {
 		ctx.MustRender("index.html", nil)
 	})
 	iris.Static("/public", "./public/", 1)
+	iris.StaticFS("/upload", models.Config.UploadDir, 1)
 	iris.Get("/msg", func(ctx *iris.Context) {
 		pgStr := ctx.FormValueString("pagesize")
 		nthStr := ctx.FormValueString("nth")
@@ -87,7 +93,7 @@ func main() {
 
 		switch msg.Op {
 		case "INSERT":
-			if err := models.InsertMsg(msg.Data, models.AdminUser); err != nil {
+			if err := models.InsertMsg(msg.Data, "admin"); err != nil {
 				ctx.WriteString(err.Error())
 				return
 			}
@@ -119,10 +125,10 @@ func main() {
 				ctx.JSON(200, response)
 				return
 			}
-
-			path := models.UPLOAD_DIR + models.GetFilePrefix() + header.Filename
+			fname := models.GetFilePrefix() + header.Filename
+			path := filepath.Join(models.Config.UploadDir, fname)
 			fasthttp.SaveMultipartFile(header, path)
-			files[header.Filename] = path
+			files[header.Filename] = "/upload/" + fname
 		}
 	})
 	iris.Listen(models.Config.Listen + ":" + models.Config.Port)

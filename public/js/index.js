@@ -263,7 +263,6 @@ function fetchMsg(nth) {
             $(imgs[k]).css("height", divWidth * 0.4 * xradio + "px");
         }
     }, function (pct) {
-        //WEC
         progress.set(pct)
         if (pct == 100) {
             progress.set(0);
